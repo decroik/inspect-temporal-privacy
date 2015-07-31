@@ -1,0 +1,1616 @@
+LTCvocabulary VocLtc  {
+	type Time isa nat
+    Start: Time
+    partial Next(Time):Time
+}
+
+vocabulary voc_privacy {
+	extern vocabulary VocLtc
+	
+	type AttrSrc
+	
+	type Stakeholder isa AttrSrc		// Stakeholers in the organization
+	type User isa Stakeholder			// User in the system : set U
+	type Organization isa Stakeholder	// Organization in the system : set O
+	
+	type Attribute						// Attribute in the electronic service : set A
+	type Property isa Attribute			// Properties
+	
+	type Credential isa AttrSrc			// Authentication tokens used in the modeled 
+										// service
+	type Profile isa AttrSrc			// Profiles
+	
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// Vocabulary : Attributes and Properties
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	PropertyBasedOn(Attribute,Attribute)		// First Attribute Property of Attribute
+	
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	// Vocabulary : Input model - Identifier Model
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+	type Identifier                             	// Identifier
+  	type Identity isa Identifier                	// Identity
+  	type Pseudonym isa Identifier               	// Pseudonym	
+  	type OneTimeUsedPseudonym isa Identifier		// OneTimeUsedPseudonym
+  	type SessionIdentifier isa Identifier  	    	// Groups service transactions
+    
+  	IdentifierSetAttr(Identifier, Attribute)    	// Attr part of Identifier set
+  												
+
+	//------------------------------------------------------------------------------------
+  	// Services & Service Policies
+  	//------------------------------------------------------------------------------------  
+  	type ServiceType                              // Services
+  	type ServiceIdentifier isa AttrSrc
+    
+  	// A service that is represented by a service instance is characterized 
+  	// by the service type and its hosting organization  
+  	partial Service(ServiceType, Organization) : ServiceIdentifier  
+   
+  	ServiceInvokedAt(ServiceIdentifier,Time)   
+  	ServiceExecuteAt(ServiceIdentifier,Time)
+  	partial ServiceExecuteCompleteAt(Time) : ServiceIdentifier
+    
+  	//Session, services within one session keeps volatile data into memory  
+  	SessionMember(SessionIdentifier, ServiceIdentifier)
+    
+  	// Service policies contain four sections
+  	type AccessPolicyId
+  	type StoragePolicyId
+  	type DistributionPolicyId
+  	type OutputPolicyId
+	
+  	// This group of predicates specifies the service policy
+  	OwnCredential(AccessPolicyId,Credential)
+  	OwnProfile(AccessPolicyId,Profile)
+  	RevealAttr(AccessPolicyId, AttrSrc, Attribute, Stakeholder)
+  	ProveProperty(AccessPolicyId, AttrSrc, Property,Stakeholder)
+  	GenerateAttr(AccessPolicyId, Attribute)
+  	StoreAttr(StoragePolicyId, Attribute, Stakeholder)
+  	DistrAttrTo(DistributionPolicyId, ServiceIdentifier, Attribute, Stakeholder)
+  	OutputAttribute(OutputPolicyId, Attribute)
+  	OutputCred(OutputPolicyId, Credential)  
+  	OutputProf(OutputPolicyId, Profile)
+    
+  	// A service policy is assigned to each service instance.  Each service 
+  	// policy is composed of an access policy, storage policy, distribution
+  	// policy, and an output policy  
+  	partial AccessPolicy(ServiceIdentifier) : AccessPolicyId
+  	partial StoragePolicy(ServiceIdentifier) : StoragePolicyId
+  	partial DistributionPolicy(ServiceIdentifier) : DistributionPolicyId
+  	partial OutputPolicy(ServiceIdentifier) : OutputPolicyId
+  	
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//  Vocabulary : Input model - User Model
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
+  
+  	//  Trust perception of the user = two trust relations
+  	StorageTrust(Organization)              // Set R_S
+  	DistributionTrust(Organization)         // Set R_D  
+    
+  	// User's initial state  
+  
+  	// ** 1) Claim-based authentication technologies
+	
+  	type X509 isa Credential
+  	type MifareClassic isa Credential
+  	type Calypso isa Credential
+  	type PETCredential isa Credential
+  	type Idemix isa PETCredential 
+  	type UProve isa PETCredential
+  	type EToken isa PETCredential
+  	
+  	// General credential technology
+  	TransactionIdentifier(Credential) : Identifier
+  	
+	// Claimbased Credential technology
+  	CredAttr(Credential, Attribute)             // Credential's attributes  
+  	CredIssuer(Credential) : Organization		// Organization that issues credential  
+  	
+  	CredLinkedWith(Credential,Credential)					// Hybrid credential
+  	CredPublicAttribute(PETCredential,Attribute)			// e.g. info etoken
+  	partial CredLinkabilityThreshold(PETCredential):Time	// A cred becomes linkable
+  															// in case it is spent more
+  															// than the Threshold
+  	CredSpentAt(Credential,Organization,Time)	
+  	CredSpent(Credential,Organization) : Time
+  	
+  	InitiallyOwnedCredential(Credential)
+  	OwnCredentialAt(Credential,Time)
+  	
+  	// ** 2) Network-based tehnologies
+  	//type ProfileAccessType constructed from {RestrictedAccess, PublicAccess }
+  	type ProfileAccessType
+  	RestrictedAccess : ProfileAccessType
+  	PublicAccess : ProfileAccessType
+  
+  	ProfAttr(Profile, Attribute, Stakeholder)   // (attr,stake) in profile
+  	ProfAccessType(Profile) : ProfileAccessType // Profile technology
+  	ProfOwner(Profile) : Organization           // Profile host
+  	ProfAccess(Profile, Organization)           // Access Profile
+  	
+  	InitiallyOwnedProfile(Profile)
+  	OwnProfileAt(Profile,Time)
+  	
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//  Vocabulary : Internal symbols
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
+  	//CausalUserProfileT(Organization,Identifier,ServiceIdentifier,Attribute,Stakeholder)
+  	CausalUserProfile(Organization,Identifier,ServiceIdentifier,Attribute,Stakeholder)
+
+    IsIdentifierSetAttr(Identifier,Attribute)
+    SubProfileIdentifierSetAttr(Identifier,Attribute)
+    
+  	// Storage trust in service instance that is deduced from the     
+  	StorageTrustServInstance(ServiceIdentifier)
+  	DistributionTrustServInstance(ServiceIdentifier)
+    
+  	// Service instance invocations by users 
+  	ServiceInvokedByUser(ServiceIdentifier)
+  
+  	// Service instance (arg 1) directly invoked by service instance (arg 2)
+  	Successor(ServiceIdentifier, ServiceIdentifier)
+  
+  	// Service instance (arg1) invoked by service instance (arg2)
+  	ServiceInvokedBy(ServiceIdentifier, ServiceIdentifier)  
+  
+  	// Attributes that are generated by a service instance are revealed to it.
+  	GeneratedByService(ServiceIdentifier, Attribute, Stakeholder)
+  
+  	// Attributes that are directly revealed when invoking a service instance
+  	RevealedToService(ServiceIdentifier, Attribute, Stakeholder)
+  
+  	// Attributes that are forwarded by a service instance (arg1) to a service
+  	// instance (arg 2) that it directly invokes 
+  	ForwardedByServiceToSucc(ServiceIdentifier, ServiceIdentifier, Attribute, Stakeholder)
+  
+  	// Attributes that are specified in the storage policy  
+  	ServiceStoredPolicyAttr(ServiceIdentifier, Attribute, Stakeholder)
+  
+  	// Attributes that are stored when revealed when invoking a service instance
+  	ServiceStoredRevealAttr(ServiceIdentifier, Attribute, Stakeholder)
+  
+  	// A path between two services that contains no services that are 
+  	// distribution trusted.
+  	UntrustedPath(ServiceIdentifier, ServiceIdentifier)  
+    
+  	// Attributes that are distributes by preceding service instances
+  	ServiceStoredForwardAttr(ServiceIdentifier, ServiceIdentifier, Attribute, Stakeholder)
+                             
+  	// The sub-profiles that are built for a service instance (arg 1) invoked
+  	// by a user invokable service (arg 2).                              
+  	SubProfile(ServiceIdentifier, ServiceIdentifier, Attribute, Stakeholder)
+  	SubProfileId(ServiceIdentifier, ServiceIdentifier, Identifier)
+    
+  	ProfIdentifier(Profile,Identifier)
+  
+  	UserProfileId(Organization, Identifier, Time)
+  	
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	// Vocabulary : Output symbols
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  
+  
+  	// The user profiles to construct for a user invokable service instance
+  	//UserProfile(Organization, Identifier, Attribute, Stakeholder, Time)
+  	
+  	// Queries related to linkability of servcies (type 1)
+  	AnonService(ServiceIdentifier,Organization,Time)
+  	PseudoService(ServiceIdentifier,Organization,Time)
+  	IdentService(ServiceIdentifier,Organization,Time)
+  
+  	IsAnonService(ServiceIdentifier,Organization)  
+  	IsPseudoService(ServiceIdentifier,Organization)
+  	IsIdentService(ServiceIdentifier,Organization)
+  	NoAnonService(ServiceIdentifier,Organization)
+  	NoPseudoService(ServiceIdentifier,Organization)
+  	NoIdentService(ServiceIdentifier,Organization)
+   
+   	// Queries related to Attributes
+   	SearchSet(Attribute)
+   	UserProfileMatch(Organization,Identifier)
+   	ViolationSet(Attribute,Organization)
+   	UserProfileViolation(Organization,Identifier,Attribute)
+   	
+  	// Queries related to Collaboration (type 3)
+  	ShareDataTo(Organization,Organization)
+  	IsShareDataTo(Organization, Organization)
+  	NoShareDataTo(Organization, Organization)
+  	IsShareDataSource(Organization)
+  	NoShareDataSource(Organization)
+  	
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	// Vocabulary : Queries - Dynamic service properties
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++  	
+  	ServiceFollowedBy(ServiceIdentifier,ServiceIdentifier)					// input model
+  	ServiceOneTime(ServiceIdentifier)										// input model
+  	partial UserInvokesServiceAt(Time) : ServiceIdentifier					// input model
+	
+	partial ServiceInvokedByUserAt(Time) : ServiceIdentifier 				
+  	
+  	Reachability(ServiceIdentifier)
+  	ReachabilityNotViaService(ServiceIdentifier)
+  	ReachabilityNotCredential(Credential)
+}
+
+vocabulary voc_privacy_step2 {
+	extern vocabulary voc_privacy
+	
+  	//CausalUserProfile(Organization,Identifier,ServiceIdentifier,Attribute,Stakeholder)
+}
+
+vocabulary voc_privacy_step3 {
+	extern vocabulary voc_privacy_step2
+	
+  	UserProfile(Organization, Identifier, Attribute, Stakeholder, Time)
+}
+
+theory theo_time : voc_privacy {
+	{ 
+		Start = MIN[:Time].
+		!t : Next(t) = t + 1 <- Time(t+1). //Next is incrementing as long as this stays within bounds
+	}
+}
+
+theory theo_misc : voc_privacy {
+	// Storage trust of a user for a service instance is derived from the storage
+  	// trust in the organization that hosts the service instance.
+  	{
+    	! si : StorageTrustServInstance(si) <- ? st[ServiceType] o : 
+                                                Service(st,o) = si & 
+                                                StorageTrust(o).
+  	}  
+  
+  	// Distribution trust of a user for a service instance is derived from the 
+  	// distribution trust in the organization that hosts the service instance.
+  	{
+    	! si : DistributionTrustServInstance(si) <- ? st[ServiceType] o : 
+                                                Service(st,o) = si & 
+                                                DistributionTrust(o).
+  	}
+	
+	// Attributes that are generated by a service instance are revealed to it.
+  	{
+    	! si a e : GeneratedByService(si,a,e) <- ? ap s[ServiceType] :
+                                      AccessPolicy(si) = ap &
+                                      GenerateAttr(ap,a) &
+                                      Service(s,e) = si.
+  	}
+  	
+  	// Conditional linkabilities of identifiers
+  	//	(1)	: Pseudonyms
+  	//	(2)	: Identities
+  	//  (3)	: Transaction Identifiers
+  	{
+  		! id a : IsIdentifierSetAttr(id,a) <- Pseudonym(id) & IdentifierSetAttr(id,a).
+  		
+  		! id a : IsIdentifierSetAttr(id,a) <- Identity(id) & IdentifierSetAttr(id,a).
+  		
+  		//! id a : IsIdentifierSetAttr(id,a) <- ? c[Credential] o[Organization] : 
+  		//							TransactionIdentifier(c) = id &
+  		//							CredSpent(c,o) > CredLinkabilityThreshold(c).
+  	}
+  	
+  	//  One time used pseudonyms
+  	{
+  		! id a : SubProfileIdentifierSetAttr(id,a) <- IsIdentifierSetAttr(id,a).
+  		
+  		! id a : SubProfileIdentifierSetAttr(id,a) <- 
+  								OneTimeUsedPseudonym(id) & IdentifierSetAttr(id,a).
+  								
+  		! id a : SubProfileIdentifierSetAttr(id,a) <- 
+  								SessionIdentifier(id) & IdentifierSetAttr(id,a).
+  	}
+}
+
+theory theo_credential_properties : voc_privacy {
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	// Theory : behavior
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++ 
+	
+	// The attributes that are revealed to the service instance.
+  	{
+    	// Service policy dependent part
+    	//  (1)   : When showing non-PET credentials, transaction identifiers are 
+    	//			disclosed linkable to the credential. 
+		//	(2)	  : When showing PET credentials, transaction identifiers are disclosed
+		//			only in the case a limited showing threshold is crossed.
+		//  (3)   : Partial public attributes, e.g. eToken's info term
+		//	(4)   : The attributes that are revealed according to the access
+		//			policies.
+		//	(5)		: Reveal the property as specified in the access policies
+    	//  (6)   : Attributes that are generated by the service are revealed to
+		//			the provider.  E.g., generating an attribute based on the 
+		//			user's input.
+    	//  (7)   : Session identifier are linkable attributes that group a 
+		//			a set of services, and that are revealed to the session 
+		//			services		
+		
+		! si a e : RevealedToService(si,a,e) <- ? cred ap id :
+												AccessPolicy(si) = ap &
+												OwnCredential(ap,cred) &
+												TransactionIdentifier(cred) = id &
+												IdentifierSetAttr(id,a) &
+												CredIssuer(cred) = e.
+												
+	    ! si a e : RevealedToService(si,a,e) <- ? cred cred' ap id o[Organization] s[ServiceType] :
+									AccessPolicy(si) = ap &
+									OwnCredential(ap,cred') &
+									CredLinkedWith(cred,cred') &
+									Service(s,o) = si & 
+									TransactionIdentifier(cred) = id &
+									IdentifierSetAttr(id,a) &
+									CredIssuer(cred) = e.
+												
+		! si a e : RevealedToService(si,a,e) <- ? cred[PETCredential] ap :
+												AccessPolicy(si) = ap &
+												OwnCredential(ap,cred) &
+												CredPublicAttribute(cred,a) &
+												CredIssuer(cred) = e.
+		
+    	! si a e : RevealedToService(si,a,e) <- ? ap cred : 
+                        AccessPolicy(si) = ap &
+                        RevealAttr(ap,cred,a,e).
+    
+    	! si prop e : RevealedToService(si,prop,e) <- ? ap cred :
+                        AccessPolicy(si) = ap &
+                        ProveProperty(ap,cred,prop,e).
+   
+    	! si a e : RevealedToService(si,a,e) <- GeneratedByService(si,a,e).
+    
+    	! si a e : RevealedToService(si,a,e) <- ? s[ServiceType] sessid[SessionIdentifier] : 
+                        SessionMember(sessid,si) & Service(s,e) = si &
+                        IdentifierSetAttr(sessid,a).
+    
+		
+    	// Technology dependent part: certificates
+    	//  (1)   : X509 - all attributes are revealed when using a X509 
+    	//                 certificate    
+		//  (2)	  : X509 - non-selective attribute disclosure property - redundant
+		//								 with (1).
+		//	(3)	  :	X509 - full attribute disclosure property when proving property
+		//								 redundant with (1).
+		//  (4)   : X509 - when proving a property, the required attributes are
+    	//                 revealed, other attributes of cred as well redundant with (1)
+           
+    	//  (3)   : X509 - all attributes are revealed when proving ownership
+    	//                 of a X509 certificate
+    			
+		! si a e : RevealedToService(si,a,e) <- ? cred[X509] ap :
+                        			AccessPolicy(si) = ap &
+	  								OwnCredential(ap,cred) &                                      
+                        			CredAttr(cred,a) & 
+		  							CredIssuer(cred) = e.
+																			
+		//		Idemix - no additional rules
+		
+		//		UProve - no additional rules
+		
+		//		Mifare Classic Cred
+		
+		! si a e : RevealedToService(si,a,e) <- ? cred[MifareClassic] ap :
+                        			AccessPolicy(si) = ap &
+									OwnCredential(ap,cred) &                                      
+                        			CredAttr(cred,a) & 
+									CredIssuer(cred) = e.
+		
+		//		Calypso Cred
+		! si a e : RevealedToService(si,a,e) <- ? cred[Calypso] ap :
+                        			AccessPolicy(si) = ap &
+									OwnCredential(ap,cred) &                                      
+                        			CredAttr(cred,a) & 
+									CredIssuer(cred) = e.
+																							
+        // Technology depend part: profiles
+    	//  (1)   : Public profiles are accessible to any organization
+    	//  (2)   : Only a restricted group of organizations have access to the
+    	//          profile.  
+    	! si a e : RevealedToService(si,a,e) <- ? ap p : 
+    								AccessPolicy(si) = ap & 
+    								OwnProfile(ap,p) &
+                                    ProfAccessType(p) = PublicAccess &
+                                    ProfAttr(p,a,e).
+                                      
+    	! si a e : RevealedToService(si,a,e) <- ? ap p s[ServiceType] o :
+    								AccessPolicy(si) = ap &
+    								OwnProfile(ap,p) &
+                                    ProfAccessType(p) = RestrictedAccess &
+                                    Service(s,o) = si & ProfAccess(p,o) & 
+                                    ProfAttr(p,a,e).    
+  	}
+}
+
+
+theory theo_sub_profiles : voc_privacy {
+	// A service instance (arg 2) is a successor of another service 
+  	// instance (arg 1) when the latter directly invokes the former.  This is
+  	// derived from the distribution policy that is assigned to the latter.
+  	// Possibly, multiple successors exist (i.e. all successors are concurrent).
+  	{
+    	! si succ : Successor(si,succ) <- ? dp a e : 
+                            DistributionPolicy(si) = dp &
+                            DistrAttrTo(dp,succ,a,e).
+  	}  
+  
+  	// A user invokable service is no successor of any other service instance.
+  	{
+    	! si : ServiceInvokedByUser(si) <- ~(? pred : Successor(pred,si)).
+  	}   
+  
+  	// Service instance invocations propagate from one to another.
+  	//  (1)   : A service instance (arg 2) invokes its successors (arg 1).
+  	//  (2)   : A service instance (arg 2) invokes indirectly other 
+  	//          service instances (arg 1) = transitivity
+  	{
+    	! succ si : ServiceInvokedBy(succ,si) <- Successor(si,succ).
+    	! si_2 si_0 : ServiceInvokedBy(si_2,si_0) <- ? si_1 : 
+    	                     ServiceInvokedBy(si_1,si_0) &  // make successor instead 
+                             ServiceInvokedBy(si_2,si_1).	// more efficient
+  	}
+    
+  	// Attributes that must be stored by a service instance as specified in the
+  	// assigned storage policy.
+  	{
+    	! si a e : ServiceStoredPolicyAttr(si,a,e) <- ? sp :
+                             StoragePolicy(si) = sp &
+                             StoreAttr(sp,a,e).
+  	}  
+  
+  	// All attributes that are revealed by the user to the service instance are 
+  	// stored under the assumption that there is no storage trust in the
+  	// organization that hosts this service instance. 
+  	{
+    	! si a e : ServiceStoredRevealAttr(si,a,e) <- RevealedToService(si,a,e).                                      
+  	}
+  
+  	// Attributes that are forwarded by a service instance (arg1) to a service
+  	// instance (arg 2) that is directly invoked by it.
+  	//    (1)   : Forward attributes that are specified in the distribution 
+  	//            policy
+  	//    (2)   : Forward all revealed attributes When there is no distribution 
+  	//            trust in the organization that hosts the service instance
+  	{    
+    	! si succ a e : ForwardedByServiceToSucc(si,succ,a,e) <- ? dp :
+                                        DistributionTrustServInstance(si) &
+                                        DistributionPolicy(si) = dp &
+                                        DistrAttrTo(dp,succ,a,e).
+                                        
+    	! si succ a e : ForwardedByServiceToSucc(si,succ,a,e) <- ? dp ax ex :
+                                        ~DistributionTrustServInstance(si) &
+                                        DistributionPolicy(si) = dp &
+                                        DistrAttrTo(dp,succ,ax,ex) &
+                                        RevealedToService(si,a,e).
+  	}
+  
+  	// Path where services between (start) and (end) have no distribution trust  
+  	{
+    	! start succ : UntrustedPath(start,succ) <- 
+       	    	        Successor(start,succ) & 
+        	            ~DistributionTrustServInstance(succ).
+    	! start si : UntrustedPath(start,si) <- ? si_x : 
+        	            UntrustedPath(start,si_x) & Successor(si_x,si) & 
+            	        ~DistributionTrustServInstance(si_x).
+  	}
+      
+  	// All attributes that are forwarded to a service instance (arg 1) by other
+  	// preceding service instance caused by a user invoked service (arg 2) are
+  	// stored under the assumption that there is no storage trust in the
+  	// organization that hosts this service instance (arg 1)
+  	//  (1)   : when service instance (arg 1) is successor of a user invoked
+  	//          service  
+  	//  (2)   : when service instance (arg 1) is successor of source
+  	//  (3)   : in case of the user invoked service is the source of attributes
+  	//  (4)   : in case other services in the path are the source of attributes
+  	{
+    	! si su a e : ServiceStoredForwardAttr(si,su,a,e) <-
+                                   ServiceInvokedByUser(su) &
+                                   ForwardedByServiceToSucc(su,si,a,e).
+                                       
+    	! si su a e : ServiceStoredForwardAttr(si,su,a,e) <- ? src :
+                                   ServiceInvokedByUser(su) &
+                                   ServiceInvokedBy(src,su) &
+                                   ForwardedByServiceToSucc(src,si,a,e).
+                                   
+    	! si su a e : ServiceStoredForwardAttr(si,su,a,e) <- ? succ : 
+                                   ServiceInvokedByUser(su) &
+                                   UntrustedPath(su,si) &
+                                   ServiceInvokedBy(si,succ) &
+                                   ForwardedByServiceToSucc(su,succ,a,e).
+                                    
+    	! si su a e : ServiceStoredForwardAttr(si,su,a,e) <- ? src succ :
+                                   ServiceInvokedByUser(su) &
+                                   UntrustedPath(src,si) & 
+                                   ServiceInvokedBy(src,su) &
+                                   ServiceInvokedBy(si,succ) &
+                                   ForwardedByServiceToSucc(src,succ,a,e).
+  	}
+  
+  	// Store all attributes in the sub profile that are the causation of the
+  	// service instance (arg 1) invoked (directly or indirectly) by a user
+  	// invoked service (arg 2).  Three attributes sources exist, namely
+  	//  (1)   : attributes specified in the storage policy of a 
+  	//          user invoked service 
+  	//  (2)   : attributes revealed by the user (if no storage trust) of a user
+  	//          invoked service
+  	//  (3)   : attributes specified in the storage policy
+  	//  (4)   : attributes revealed by the user (if no storage trust)
+  	//  (5)   : attributes forwarded by preceding service instance (if no storage
+  	//          trust).
+  	{
+    	! su a e :    SubProfile(su,su,a,e) <- ServiceInvokedByUser(su) &
+                             ServiceStoredPolicyAttr(su,a,e). 
+                                                             
+    	! su a e :    SubProfile(su,su,a,e) <- ~StorageTrustServInstance(su) &
+                             ServiceInvokedByUser(su) &
+                             ServiceStoredRevealAttr(su,a,e).         
+                                                                         
+    	! si su a e : SubProfile(si,su,a,e) <- ServiceInvokedByUser(su) &                             
+                             ServiceInvokedBy(si,su) &
+                             ServiceStoredPolicyAttr(si,a,e).
+                             
+    	! si su a e : SubProfile(si,su,a,e) <- ~StorageTrustServInstance(si) &
+                             ServiceInvokedByUser(su) &
+                             ServiceInvokedBy(si,su) &
+                             ServiceStoredRevealAttr(si,a,e).
+                             
+    	! si su a e : SubProfile(si,su,a,e) <- ~StorageTrustServInstance(si) & 
+                             ServiceInvokedByUser(su) &
+                             ServiceInvokedByUser(su) &
+                             ServiceInvokedBy(si,su) &
+                             ServiceStoredForwardAttr(si,su,a,e).
+  	}
+  
+  	{
+    	! si su id : SubProfileId(si,su,id) <- ? a e :
+                             SubProfile(si,su,a,e) & 
+                             ~(? a_x : SubProfileIdentifierSetAttr(id,a_x) & 
+                                 ~(? e_x : SubProfile(si,su,a_x,e_x))).
+  	}
+  	
+  	//Helper predicate, find identifiers of profiles
+  	{
+    	! p id : ProfIdentifier(p,id) <- (Pseudonym(id) | Identity(id)) &   	
+    									~(? a : IdentifierSetAttr(id,a) & 
+                                          	~(? e : ProfAttr(p,a,e))). 
+  	}
+}
+  	
+theory theo_profiles_causal : voc_privacy {
+  	
+  	{
+  		! o id a e su : CausalUserProfile(o,id,su,a,e) <- ? si s[ServiceType] :
+                               ServiceInvokedByUser(su) & 
+                               SubProfile(si,su,a,e) &
+                               SubProfileId(si,su,id) & 
+                               Service(s,o) = si.
+       
+    	! o id a e su : CausalUserProfile(o,id,su,a,e) <- ? id_x :                            
+                    CausalUserProfile(o,id_x,su,a,e) & 
+                        ~(? a_x : SubProfileIdentifierSetAttr(id,a_x) & 
+                           		~(? e_x : CausalUserProfile(o,id_x,su,a_x,e_x))).    						                            
+        
+    	! o id a e su : CausalUserProfile(o,id,su,a,e) <- ? o_src : 
+                              CausalUserProfile(o_src,id,su,a,e) & 
+                              ShareDataTo(o_src,o).
+  	}
+}
+
+//theory theo_profiles_causal2 : voc_privacy_step2 {
+//	{
+//		! o id su a e : CausalUserProfile(o,id,su,a,e) <- CausalUserProfileT(o,id,su,a,e).
+//		   				
+//		! o id su a e : CausalUserProfile(o,id,su,a,e) <- ? p a' e':
+//   						  CausalUserProfile(o,id,su,a',e') & 
+//                              ProfIdentifier(p,id) &
+//                              ProfAccessType(p) = RestrictedAccess & 
+//                              ProfAccess(p,o) &                 
+//                              ProfAttr(p,a,e).				                            
+//    }
+//}
+
+theory theo_profiles_time : voc_privacy_step3 {
+	// Merging sub profiles to user profiles kept by organization (arg 1) linked
+  	// to an identifier (arg 2) that are the causation of a user invoked service
+  	// (arg 3).
+  	//  (1)   : User profiles are constructed by sub profiles
+  	//  (2)   : Merged user profiles can be linked to newly formed identifiers
+  	//          that were partially present in different sub profiles.
+  	//  (3)   : Profiles of organizations that shares data towards another one 
+  	//          are merged.
+  	//  (4)   : Link an organization's user profile that is linked to an 
+  	//          identifier to an a-priori public available profile owned by that 
+  	//          same organization. 
+  	//  (5)   : Link an organization's user profile that is linked to an 
+  	//          identifier to an a-priori restricted available profile owned 
+  	//          by that same organization.
+  	//  (6)	  : Public access profiles
+  	//	(7)	  : Restricted access profiles
+  	//  (8)   : Propagation of user profiles to the next time point
+  	{    
+    	! o id a e t : UserProfile(o,id,a,e,t) <- ? su :        
+    						   ServiceExecuteCompleteAt(t) = su  &                    
+                               CausalUserProfile(o,id,su,a,e).
+       
+    	! o id a e t : UserProfile(o,id,a,e,t) <- ? id_x t' :   
+    							(Pseudonym(id) | Identity(id)) &                       
+                                UserProfile(o,id_x,a,e,t') & 
+                                 t' < t &
+                                 ~(? a_x : IsIdentifierSetAttr(id,a_x) & 
+                               		~(? e_x : UserProfile(o,id_x,a_x,e_x,t'))).                            
+        
+    	! o id a e t : UserProfile(o,id,a,e,t) <- ? o_src : 
+                              UserProfile(o_src,id,a,e,t) & 
+                              ShareDataTo(o_src,o).                        
+  	}
+}
+
+
+
+theory theo_temporal : voc_privacy {
+	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	// Theory : Temporal aspects
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	//++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+  	
+  	! t[Time] s[ServiceIdentifier] : UserInvokesServiceAt(t) = s => 
+												ServiceInvokedByUserAt(t) = s.
+												
+	! t[Time] s : ServiceInvokedByUserAt(t) = s => ServiceInvokedByUser(s).
+  	
+  	// At a particular moment, only one service can be invoked by the user
+	//! s s' t : UserInvokesServiceAt(s,t) & UserInvokesServiceAt(s',t) => s=s'.
+	// Requirement implicitely met by the semantics of a function.
+	
+	! s[ServiceIdentifier] t[Time] : ServiceInvokedByUserAt(t)=s => 
+						~(? t'[Time] : t'<t & 
+							~(? s'[ServiceIdentifier] : ServiceInvokedByUserAt(t') = s')).
+	
+	
+	// Service order
+	// (1) : The service that follows a given service
+	// (2) : The service that follows a given service must be proceeded by a service
+	// (3) : Exclude that another service proceeds the service that follows
+    //! s s' t[Time] : ServiceInvokedByUserAt(t) = s & ServiceFollowedBy(s,s') => 
+      ! s s' t[Time] : ServiceExecuteCompleteAt(t) = s & ServiceFollowedBy(s,s') =>
+    										ServiceInvokedByUserAt(Next(t))=s'.
+    ! s s' t[Time] : ServiceInvokedByUserAt(t)=s' & ServiceFollowedBy(s,s') => 
+    								? t'[Time] : t'<t & ServiceExecuteCompleteAt(t') = s.
+    								//? t'[Time] : t'<t & ServiceInvokedByUserAt(t')=s.
+    ! s s' t[Time] : ServiceInvokedByUserAt(Next(t))=s' & ServiceFollowedBy(s,s') => 
+    								~(? s''[ServiceIdentifier] : 
+    										ServiceInvokedByUserAt(t)=s'' & ~(s=s'')).
+	
+	// One Time Executable services
+	! s t t' : ServiceExecuteAt(s,t) & 
+			   ServiceExecuteAt(s,t') & 
+			   ServiceOneTime(s) => t = t'.
+	
+	// Service invocation in function of time
+	// (1)	: User invoked services
+	// (2)	: Service invoked due to the execution of the predecessor
+	{
+		! s t : ServiceInvokedAt(s,t) <- ServiceInvokedByUserAt(t) = s.
+		
+		! s t : ServiceInvokedAt(s,t) <- ? su : 
+									ServiceInvokedByUserAt(t) = su &
+									ServiceExecuteAt(su,t) &
+									ServiceInvokedBy(s,su).		
+	}
+	
+	// Under the well-founded semantics: a three-value assignment is used for 
+	// CredSpendLimit - uncertain value corresponds to no limit, resulting in Credential
+	// always spendable.  Two constraint rules express this.
+	//! c t : CredSpentAt(c,t) < CredSpendLimit(c) => CredSpendableAt(t).
+    //! t : ~CredSpenableAt(t) => ? c : CredSpentAt(c,t) >= CredSpendLimit.
+	
+	// Service execution
+	//	(1) : A service can only execute if the user possess the required credentials.
+	{
+		! s t : ServiceExecuteAt(s,t) <- ? ap : 
+									ServiceInvokedAt(s,t) &
+									AccessPolicy(s) = ap &
+									~(? c : OwnCredential(ap,c) &
+										~OwnCredentialAt(c,t)).
+	}	
+	
+	{
+		! su t[Time] : ServiceExecuteCompleteAt(t) = su <- 
+									ServiceInvokedByUser(su) &
+									ServiceExecuteAt(su,t) & 
+									~(? s : ServiceInvokedBy(s,su) & ~ServiceExecuteAt(s,t)).
+	}
+	
+	// Credential ownership
+	// (1)	: Initially owned credentials
+	// (2)	: Credentials issued by service
+	// (3)	: Previously owned credentials (we assume that credentials exist until end
+	//		  of the modeled time)
+	{
+		! c : OwnCredentialAt(c,0) <- InitiallyOwnedCredential(c).
+		
+		! c t : OwnCredentialAt(c,t) <- ? s op :
+									ServiceExecuteAt(s,t) & 
+									OutputPolicy(s) = op & 
+									OutputCred(op,c).
+									
+		! c t : OwnCredentialAt(c,Next(t)) <- OwnCredentialAt(c,t). 
+	}
+	
+	// Profile ownership
+	{
+		! p : OwnProfileAt(p,0) <- InitiallyOwnedProfile(p).
+		
+		! p t : OwnProfileAt(p,t) <- ? s op :
+									ServiceExecuteAt(s,t) &
+									OutputPolicy(s) = op &
+									OutputProf(op,p).
+									
+		! p t : OwnProfileAt(p,Next(t)) <- OwnProfileAt(p,t).
+	} 
+	
+	// Spending credentials in function of time - only when services are executed.
+	// (1)	:	stand-alone credential
+	// (2)	:	hybrid credentials linked to other credentials (e.g. eToken)
+	{
+		! c o t : CredSpentAt(c,o,t) <- ? s ap st[ServiceType]:
+									ServiceExecuteAt(s,t) & 
+									Service(st,o) = s &
+									AccessPolicy(s) = ap &
+									OwnCredential(ap,c).
+		
+		! c o t : CredSpentAt(c,o,t) <- ? s ap st[ServiceType] c' :
+									ServiceExecuteAt(s,t) &
+									Service(st,o) = s &
+									AccessPolicy(s) = ap &
+									OwnCredential(ap,c') &
+									CredLinkedWith(c,c').
+	}	
+	
+	//Count the number a credential is spent.
+	! c[Credential] o[Organization] : 
+			CredSpent(c,o) = 
+					#{c'[Credential],t'[Time],o'[Organization] : 
+						c=c' & 
+						(o=o' | ShareDataTo(o',o)) & 
+						CredSpentAt(c',o',t')}.
+}
+
+theory theo_queries_static : voc_privacy_step3 {
+	//----------------------------------------------------------------------------
+  //  TYPE 1 : Aspespects about linkabilities of services
+  //    - Anonymity, Pseudonymity, Identifiability
+  //----------------------------------------------------------------------------  
+  // This concerns only services invoked by a user.
+  ! si o t : AnonService(si,o,t) | PseudoService(si,o,t) | IdentService(si,o,t) <=> 
+  						? ti [Time]: ti =< t & ServiceInvokedByUserAt(ti) = si. 
+      
+  { 
+    ! o id t : UserProfileId(o,id,t) <- ? a e : UserProfile(o,id,a,e,t).
+  }
+      
+  // (1) Constraint rule: an identifiable service
+  // (2) Constraint rule: a pseudonymous service    
+  ! t si o : ? id : UserProfileId(o,id,t) & Identity(id) <=> 
+  							IdentService(si,o,t) & ServiceInvokedByUserAt(t) = si.  
+  ! t si o : ? id : UserProfileId(o,id,t) & Pseudonym(id) <= 
+  							PseudoService(si,o,t) & ServiceInvokedByUserAt(t) = si.
+    
+  // (1) Constraint rule: no pseudonymous service
+  // (2) Constraint rule: no anonymous service
+  ! t o id si : UserProfileId(o,id,t) & Identity(id) => ~PseudoService(si,o,t).
+  ! t o id si : UserProfileId(o,id,t) & Identifier(id) => ~AnonService(si,o,t).  
+  
+  // Query type 2: Find user profiles that contain a set of attributes
+  ! o id : UserProfileMatch(o,id) <=> 
+  							! a : ? e : ~SearchSet(a) | ? t : UserProfile(o,id,a,e,t).  
+  ! o id a : UserProfileViolation(o,id,a) <=> 
+  							? e : ViolationSet(a,o) & ? t : UserProfile(o,id,a,e,t).
+  
+  // Query requirements that constraint the model
+  // (1)  : Given the identifiable services
+  // (2)  : Given the pseudonymous services
+  // (3)  : Given the anonymous services
+  // (4)  : Given that a service is not allowed to be identifiable
+  // (5)  : Given that a service is not allowed to be pseudonymous
+  // (6)  : Given that a service is not allowed to be anonymous
+  ! si o : IsIdentService(si,o) => ! t : IdentService(si,o,t).
+  ! si o : IsPseudoService(si,o) => ! t : PseudoService(si,o,t).
+  ! si o : IsAnonService(si,o) => ! t : AnonService(si,o,t).  
+  ! si o : NoIdentService(si,o) => ! t : ~IdentService(si,o,t).
+  ! si o : NoPseudoService(si,o) => ! t : ~PseudoService(si,o,t).
+  ! si o : NoAnonService(si,o) => ! t : ~AnonService(si,o,t).
+  
+  
+  //----------------------------------------------------------------------------
+  //  TYPE 3 : Aspespects about Collaborations between organizations
+  //----------------------------------------------------------------------------
+    // Share data requirements
+  // (1)  : Given a collaboration
+  // (2)  : Given a collaboration that not exists
+  // (3)  : Given an organization as a data source
+  // (4)  : Given an organization that is not a data source  
+  ! src to : IsShareDataTo(src,to) => ShareDataTo(src,to).
+  ! src to : NoShareDataTo(src,to) => ~ShareDataTo(src,to).    
+  ! src : IsShareDataSource(src) => ? to : ShareDataTo(src,to).
+  ! src : NoShareDataSource(src) => ! to : ~ShareDataTo(src,to).
+}
+
+theory theo_queries_reachability : voc_privacy {
+	// Reachability
+	// (1)	: Verify if given services can be executed.
+	// (2)  : Verify if given services can be executed in case certain services are
+	//		  excluded
+	! s : Reachability(s) => 
+					? t[Time] : ServiceExecuteCompleteAt(t) = s.
+					
+	! s s' : Reachability(s) & ReachabilityNotViaService(s') => 
+					? t[Time] t'[Time] : ServiceExecuteCompleteAt(t) = s & 
+							 ServiceExecuteCompleteAt(t') = s' & 
+							 t<t'.
+							 
+	! s c[Credential] : Reachability(s) & ReachabilityNotCredential(c) => 
+					? t[Time] : ServiceExecuteCompleteAt(t) = s & 
+								~(? t' : OwnCredentialAt(c,t') & t<t').
+					
+	//! s s' : ReachabilityNotService(s,s') => 
+	//				? t t' : ServiceExecuteAt(s,t) & ServiceExecuteAt(s',t') & t<t'.
+	//! s c  : ReachabilityNotCredential(s,c) => 
+	//				? t  : ServiceExecuteAt(s,t) & ~(? t' : OwnCredentialAt(c,t') & t<t').
+}
+
+structure struct_privacy : voc_privacy {
+	//------------------------------------------------------------------------------------
+	// General
+	//------------------------------------------------------------------------------------
+	Time = {0..4}
+	
+	AttrSrc = {
+		// Devices
+		Smartphone;
+	
+		// Stakeholder
+		User;		
+		TSO; PTO; PSP; Bank; Gov;
+		
+		// Credentials
+		IdentityCard; PPTSCred; ETokenPurse; ETokenProduct;
+		
+		// Profiles
+		AccountBank; AccountPPTS;
+		
+		// Services
+		RegisterId;	
+		RechargeId; SelectBankRechargeId; PayRechargeId; ConfirmPaymentRechargeId; 
+		IssueRechargeId; 
+		BuyProductId; SelectBankProductId; PayProductId; ConfirmPaymentProductId; 
+		IssueProductId; 
+		TripStartId; GetTripPoPId; ValidateTripStartId;	
+		TripEndId; LoadTripStartId; IssueChangeId;
+	}
+	
+	Stakeholder = {
+		User;
+		TSO; PTO; PSP; Bank; Gov;
+	}
+	
+	// Stakeholders
+	User = { User; }
+	
+	Organization = {
+		TSO; PTO; PSP; Bank; Gov;
+	}
+	//------------------------------------------------------------------------------------	
+	// Attributes and Properties
+	//------------------------------------------------------------------------------------
+	Attribute = {
+		Name; Address; PassportPicture; DoB; Age; SSN; Email;
+		AccountName;
+		
+		BankAccountUser; 
+		InvoiceReferenceRecharge; InvoiceReferenceProduct;
+		PaymentAmount; Product; 
+		
+		CommitmentPPTS;										// PPTS credential
+		CommitmentPurse; InfoPurse;							// eToken ePurse
+		CommitmentTP; InfoTP;								// eToken Transport Product
+		IDSerialNumber;										// IdentityCard
+		
+		BusId;
+		StartLocation; EndLocation;
+		TripStartValTime; TripStartValSignature; StartTripFare;
+		TripStartNonce; TripStartTime; TripStartSignature;
+		TripEndNonce; TripEndTime; TripEndSignature; TripFare;
+		
+		S1; S2; S3; S4;
+	}
+	
+	Property = {
+		Age;
+	}
+	
+	PropertyBasedOn = {					// Attribute x Attribute
+		Age,DoB;
+	} 
+	
+	//------------------------------------------------------------------------------------	
+	// Identifiers
+	//------------------------------------------------------------------------------------
+	Identifier = {
+		Id1; Id2; Id3;
+		O1; O2; O3; O4; O5; O6; O7;
+		N1;	N2;	N3;	N4;	N5;
+		T1;	T2;	T3;	T4;
+		SessId1; SessId2; SessId3; SessId4;
+	}
+	
+	Identity = { 
+		Id1; Id2; Id3; 
+	}
+	
+	OneTimeUsedPseudonym = {
+		O1; O2; O3; O4; O5; O6; O7;
+	}
+	
+	Pseudonym = { 
+		N1; N2; N3; N4; N5;
+	}
+	
+	SessionIdentifier = {
+		SessId1; SessId2; SessId3; SessId4;
+	}
+	
+	IdentifierSetAttr = {   				// Identifier x Attribute
+		Id1,Name; 
+		Id2,Address; 
+		Id3,PassportPicture;
+		
+		N1,SSN; 
+		N2,Email; 
+		N3,AccountName; 
+		N4,BankAccountUser; 
+		N5,IDSerialNumber; 
+		
+		O1,TripStartValSignature;
+		O2,TripStartSignature; 
+		O3,TripStartNonce;
+		O4,TripEndSignature;
+		O5,TripEndNonce;
+		O6,InvoiceReferenceRecharge; 
+		O7,InvoiceReferenceProduct;
+		
+		T1,CommitmentPPTS; 
+		T2,CommitmentPurse;
+		T3,CommitmentTP;
+		T4,IDSerialNumber;
+		
+		SessId1,S1; SessId2,S2; SessId3,S3; SessId4,S4;
+	} 
+	
+	//------------------------------------------------------------------------------------	
+	// Services
+	//------------------------------------------------------------------------------------	
+	ServiceType = {
+		// Registration
+		Register; 
+		
+		// Recharge ePurse
+		Recharge; SelectBankRecharge; PayRecharge; ConfirmPaymentRecharge; IssueRecharge;
+		
+		// Buy Product
+		BuyProduct; SelectBankProduct; PayProduct; ConfirmPaymentProduct; IssueProduct;
+		
+		// Trip start
+		TripStart; GetTripPoP; ValidateTripStart;
+		
+		// Trip end
+		TripEnd; LoadTripStart; IssueChange;
+	}
+	
+	ServiceIdentifier = {
+		// Registration
+		RegisterId; 
+		
+		// Recharge ePurse
+		RechargeId; SelectBankRechargeId; PayRechargeId; ConfirmPaymentRechargeId; 
+		IssueRechargeId;
+		
+		// Buy Product
+		BuyProductId; SelectBankProductId; PayProductId; ConfirmPaymentProductId; 
+		IssueProductId;
+		
+		// Trip start
+		TripStartId; GetTripPoPId; ValidateTripStartId;
+		
+		// Trip end
+		TripEndId; LoadTripStartId; IssueChangeId;
+	}
+	
+	Service = {						// ServiceType x Organization -> ServiceIdentifier
+		// Registration
+		Register,TSO->RegisterId; 
+		
+		// Recharge ePurse
+		Recharge,TSO->RechargeId; SelectBankRecharge,PSP->SelectBankRechargeId; 
+		PayRecharge,Bank->PayRechargeId; 
+		ConfirmPaymentRecharge,PSP->ConfirmPaymentRechargeId; 
+		IssueRecharge,TSO->IssueRechargeId;
+		
+		// Buy Product
+		BuyProduct,PTO->BuyProductId; SelectBankProduct,PSP->SelectBankProductId; 
+		PayProduct,Bank->PayProductId; ConfirmPaymentProduct,PSP->ConfirmPaymentProductId; 
+		IssueProduct,PTO->IssueProductId;
+		
+		// Trip start
+		TripStart,TSO->TripStartId; GetTripPoP,TSO->GetTripPoPId; 
+		ValidateTripStart,PTO->ValidateTripStartId;
+		
+		// Trip end
+		TripEnd,PTO->TripEndId; LoadTripStart,TSO->LoadTripStartId; 
+		IssueChange,TSO->IssueChangeId;
+	}
+	
+	SessionMember = {				// SessionIdentifier x ServiceIdentifier
+		// Recharge ePurse
+		SessId1,RechargeId; SessId1,IssueRechargeId;
+		SessId2,SelectBankRechargeId; SessId2,ConfirmPaymentRechargeId;
+		
+		// Buy Product
+		SessId3,BuyProductId; SessId3,IssueProductId;
+		SessId4,SelectBankProductId; SessId4,ConfirmPaymentProductId;
+	}
+
+	//------------------------------------------------------------------------------------
+	// Service Policies
+	//------------------------------------------------------------------------------------
+	AccessPolicyId = {
+		// Registration
+		RegisterAP; 
+		
+		// Recharge ePurse
+		RechargeAP; SelectBankRechargeAP; PayRechargeAP; ConfirmPaymentRechargeAP; 
+		IssueRechargeAP;
+		
+		// Buy Product
+		BuyProductAP; SelectBankProductAP; PayProductAP; ConfirmPaymentProductAP; 
+		IssueProductAP;
+		
+		// Trip start
+		TripStartAP; GetTripPoPAP; ValidateTripStartAP;
+		
+		// Trip end
+		TripEndAP; LoadTripStartAP; IssueChangeAP;
+	}
+	
+	StoragePolicyId = {
+		RegisterSP;
+		TripStartSP;
+		IssueChangeSP;
+	}
+	
+	DistributionPolicyId = {
+		// Registration
+		RegisterDP; 
+		
+		// Recharge ePurse
+		RechargeDP; SelectBankRechargeDP; PayRechargeDP; ConfirmPaymentRechargeDP; 
+		
+		// Buy Product
+		BuyProductDP; SelectBankProductDP; PayProductDP; ConfirmPaymentProductDP; 
+		
+		// Trip start
+		TripStartDP; GetTripPoPDP;
+		
+		// Trip end
+		TripEndDP; LoadTripStartDP;
+	}
+	
+	OutputPolicyId = {
+		RegisterOP; IssueRechargeOP; IssueProductOP; ValidateTripStartOP;
+	}
+	
+	OwnCredential = {				// AccessPolicyId x Credential
+		RegisterAP,IdentityCard; 
+		RechargeAP,PPTSCred; 
+		BuyProductAP,PPTSCred; 
+		TripStartAP,PPTSCred; TripStartAP,ETokenPurse; TripStartAP,ETokenProduct;		
+	}
+	
+	OwnProfile = {
+		RechargeAP,AccountPPTS; BuyProductAP,AccountPPTS;
+		PayRechargeAP,AccountBank; PayProductAP,AccountBank;
+	}
+	
+	RevealAttr = {					// AccessPolicyId x AttrSrc x Attribute x Stakeholder
+		RegisterAP,IdentityCard,Name,Gov;
+		RegisterAP,IdentityCard,Address,Gov;
+		RegisterAP,IdentityCard,DoB,Gov;
+		RegisterAP,IdentityCard,PassportPicture,Gov;
+		RegisterAP,User,AccountName,User;
+		RegisterAP,User,Email,User;
+		
+		// Recharge ePurse
+		RechargeAP,User,PaymentAmount,User;
+		SelectBankRechargeAP,RechargeId,InvoiceReferenceRecharge,TSO;
+		SelectBankRechargeAP,RechargeId,PaymentAmount,User;
+		PayRechargeAP,SelectBankRechargeId,InvoiceReferenceRecharge,TSO;
+		PayRechargeAP,SelectBankRechargeId,PaymentAmount,PSP;
+		ConfirmPaymentRechargeAP,PayRechargeId,InvoiceReferenceRecharge,TSO;
+		IssueRechargeAP,ConfirmPaymentRechargeId,InvoiceReferenceRecharge,TSO;
+		
+		// Buy Product
+		BuyProductAP,User,Product,User;
+		SelectBankProductAP,BuyProductId,InvoiceReferenceProduct,PTO;
+		SelectBankProductAP,BuyProductId,PaymentAmount,User;
+		PayProductAP,SelectBankProductId,InvoiceReferenceProduct,PTO;
+		PayProductAP,SelectBankProductId,PaymentAmount,PSP;
+		ConfirmPaymentProductAP,PayProductId,InvoiceReferenceProduct,PTO;
+		IssueProductAP,ConfirmPaymentProductId,InvoiceReferenceProduct,PTO;
+		
+		// Trip start
+		TripStartAP,Smartphone,StartLocation,User;
+		
+		GetTripPoPAP,TripStartId,StartLocation,TSO;
+		GetTripPoPAP,TripStartId,TripStartNonce,TSO;
+		GetTripPoPAP,TripStartId,TripStartValTime,TSO;
+		GetTripPoPAP,TripStartId,TripStartValSignature,TSO;
+		
+		ValidateTripStartAP,GetTripPoPId,StartLocation,TSO;
+		ValidateTripStartAP,GetTripPoPId,TripStartNonce,TSO;
+		ValidateTripStartAP,GetTripPoPId,TripStartValTime,TSO;
+		ValidateTripStartAP,GetTripPoPId,TripStartValSignature,TSO;
+		
+		// Trip end		
+		TripEndAP,Smartphone,StartLocation,TSO;
+		TripEndAP,Smartphone,InfoTP,PTO;
+		TripEndAP,Smartphone,TripStartNonce,TSO;
+		TripEndAP,Smartphone,TripStartTime,TSO;
+		TripEndAP,Smartphone,TripStartSignature,TSO;
+		TripEndAP,Smartphone,BusId,PTO;
+		
+		LoadTripStartAP,TripEndId,TripEndNonce,PTO;
+		LoadTripStartAP,TripEndId,TripEndTime,PTO;
+		LoadTripStartAP,TripEndId,TripFare,PTO;
+		LoadTripStartAP,TripEndId,BusId,PTO;
+		LoadTripStartAP,TripEndId,TripEndSignature,PTO;
+		
+		IssueChangeAP,LoadTripStartId,TripEndNonce,PTO;
+		IssueChangeAP,LoadTripStartId,TripEndTime,PTO;
+		IssueChangeAP,LoadTripStartId,TripFare,PTO;
+		IssueChangeAP,LoadTripStartId,BusId,PTO;
+		IssueChangeAP,LoadTripStartId,TripEndSignature,PTO;
+	}
+	
+	ProveProperty = {				// AccessPolicyId x AttrSrc x Property x Stakeholder
+		BuyProductAP,PPTSCred,Age,TSO;		
+	}
+	
+	GenerateAttr = {				// AccessPolicyId x Attribute
+		// Recharge ePurse
+		RechargeAP,InvoiceReferenceRecharge;
+		
+		// Buy Product
+		BuyProductAP,InvoiceReferenceProduct;
+		
+		// Trip start
+		TripStartAP,TripStartNonce; TripStartAP,TripStartValTime; 
+		TripStartAP,TripStartValSignature;
+		
+		ValidateTripStartAP,TripStartSignature; ValidateTripStartAP,TripStartTime;
+		ValidateTripStartAP,BusId;
+		
+		// Trip end
+		TripEndAP,EndLocation; TripEndAP,TripEndTime; 
+		TripEndAP,TripEndNonce; TripEndAP,TripEndSignature;
+		TripEndAP,TripFare;
+	}
+	
+	StoreAttr = {					// StoragePolicyId x Attribute x Stakeholder
+		RegisterSP,Name,Gov; RegisterSP,Address,Gov; RegisterSP,PassportPicture,Gov; 
+		RegisterSP,DoB,Gov;  RegisterSP,AccountName,User;  RegisterSP,Email,User;
+		
+		TripStartSP,CommitmentPurse,TSO; TripStartSP,CommitmentTP,PTO;
+		TripStartSP,InfoPurse,TSO; TripStartSP,InfoTP,PTO;
+		TripStartSP,TripStartNonce,TSO; TripStartSP,TripStartValTime,TSO;
+	
+		IssueChangeSP,TripEndNonce,PTO; IssueChangeSP,TripFare,PTO;
+		IssueChangeSP,BusId,PTO; IssueChangeSP,TripStartTime,TSO;
+		IssueChangeSP,TripEndTime,PTO;
+	}
+	
+	DistrAttrTo = {	 // DistributionPolicyId x ServiceIdentifier x Attribute x Stakeholder		
+		// Recharge ePurse
+		RechargeDP,SelectBankRechargeId,InvoiceReferenceRecharge,TSO;
+		RechargeDP,SelectBankRechargeId,PaymentAmount,User;
+		SelectBankRechargeDP,PayRechargeId,InvoiceReferenceRecharge,TSO;
+		SelectBankRechargeDP,PayRechargeId,PaymentAmount,PSP;
+		PayRechargeDP,ConfirmPaymentRechargeId,InvoiceReferenceRecharge,TSO;
+		ConfirmPaymentRechargeDP,IssueRechargeId,InvoiceReferenceRecharge,TSO;
+		
+		// Buy Product
+		BuyProductDP,SelectBankProductId,InvoiceReferenceProduct,PTO;
+		BuyProductDP,SelectBankProductId,PaymentAmount,User;
+		SelectBankProductDP,PayProductId,InvoiceReferenceProduct,PTO;
+		SelectBankProductDP,PayProductId,PaymentAmount,PSP;
+		PayProductDP,ConfirmPaymentProductId,InvoiceReferenceProduct,PTO;
+		ConfirmPaymentProductDP,IssueProductId,InvoiceReferenceProduct,PTO;
+		
+		
+		// Trip start		
+		TripStartDP,GetTripPoPId,StartLocation,TSO;
+		TripStartDP,GetTripPoPId,TripStartNonce,TSO;
+		TripStartDP,GetTripPoPId,TripStartValTime,TSO;
+		TripStartDP,GetTripPoPId,TripStartValSignature,TSO;
+		
+		GetTripPoPDP,GetTripPoPId,StartLocation,TSO;
+		GetTripPoPDP,GetTripPoPId,TripStartNonce,TSO;
+		GetTripPoPDP,GetTripPoPId,TripStartValTime,TSO;
+		GetTripPoPDP,ValidateTripStartId,TripStartValSignature,TSO;
+		
+		// Trip end
+		TripEndDP,LoadTripStartId,TripEndNonce,PTO;
+		TripEndDP,LoadTripStartId,TripEndTime,PTO;
+		TripEndDP,LoadTripStartId,TripFare,PTO;
+		TripEndDP,LoadTripStartId,BusId,PTO;
+		TripEndDP,LoadTripStartId,TripEndSignature,PTO;
+		
+		LoadTripStartDP,IssueChangeId,TripEndNonce,PTO;
+		LoadTripStartDP,IssueChangeId,TripEndTime,PTO;
+		LoadTripStartDP,IssueChangeId,TripFare,PTO;
+		LoadTripStartDP,IssueChangeId,BusId,PTO;
+		LoadTripStartDP,IssueChangeId,TripEndSignature,PTO;
+	}
+	
+	OutputAttribute = {				// OutputPolicyId, Attribute
+		ValidateTripStartOP,TripStartSignature;
+		ValidateTripStartOP,TripStartNonce;
+		ValidateTripStartOP,TripStartTime;
+		ValidateTripStartOP,StartLocation;
+		ValidateTripStartOP,BusId;
+		ValidateTripStartOP,InfoTP;
+	}
+	
+	OutputCred = {					// OutputPolicyId x Credential
+		RegisterOP,PPTSCred; 
+		IssueRechargeOP,ETokenPurse; 
+		IssueProductOP,ETokenProduct;
+	}
+	
+	OutputProf = {					// OutputPolicyId x Profile
+		RegisterOP,AccountPPTS;
+	}
+	
+	AccessPolicy = {				// ServiceIdentifier -> AccessPolicyId
+		// Registration
+		RegisterId->RegisterAP; 
+		
+		// Recharge ePurse
+		RechargeId->RechargeAP; SelectBankRechargeId->SelectBankRechargeAP; 
+		PayRechargeId->PayRechargeAP; ConfirmPaymentRechargeId->ConfirmPaymentRechargeAP; 
+		IssueRechargeId->IssueRechargeAP;
+		
+		// Buy Product
+		BuyProductId->BuyProductAP; SelectBankProductId->SelectBankProductAP; 
+		PayProductId->PayProductAP; ConfirmPaymentProductId->ConfirmPaymentProductAP; 
+		IssueProductId->IssueProductAP;
+		
+		// Trip start
+		TripStartId->TripStartAP; GetTripPoPId->GetTripPoPAP; 
+		ValidateTripStartId->ValidateTripStartAP;
+		
+		// Trip end
+		TripEndId->TripEndAP; LoadTripStartId->LoadTripStartAP; 
+		IssueChangeId->IssueChangeAP;
+	}
+	
+	StoragePolicy = {				// ServiceIdentifier -> StoragePolicyId
+		RegisterId->RegisterSP;
+		TripStartId->TripStartSP;
+		IssueChangeId->IssueChangeSP;
+	}		
+	
+	DistributionPolicy = {			// ServiceIdentifier -> DistributionPolicyId
+		// Registration
+		RegisterId->RegisterDP; 
+		
+		// Recharge ePurse
+		RechargeId->RechargeDP; SelectBankRechargeId->SelectBankRechargeDP; 
+		PayRechargeId->PayRechargeDP; ConfirmPaymentRechargeId->ConfirmPaymentRechargeDP; 
+		
+		// Buy Product
+		BuyProductId->BuyProductDP; SelectBankProductId->SelectBankProductDP; 
+		PayProductId->PayProductDP; ConfirmPaymentProductId->ConfirmPaymentProductDP; 
+		
+		// Trip start
+		TripStartId->TripStartDP; GetTripPoPId->GetTripPoPDP;
+		
+		// Trip end
+		TripEndId->TripEndDP; LoadTripStartId->LoadTripStartDP;
+	}
+	
+	OutputPolicy = {				// ServiceIdentifier -> OutputPolicyId
+		RegisterId->RegisterOP; IssueRechargeId->IssueRechargeOP; 
+		IssueProductId->IssueProductOP; ValidateTripStartId->ValidateTripStartOP;
+	}
+
+	//------------------------------------------------------------------------------------	
+	// User model
+	//------------------------------------------------------------------------------------
+	StorageTrust = {
+		Gov; Bank; PSP; TSO; PTO; 
+	}
+	
+	DistributionTrust = {
+		Gov; Bank; PSP; TSO; PTO;
+	}
+	
+	//------------------------------------------------------------------------------------
+	// Credentials
+	//------------------------------------------------------------------------------------
+	Credential = {
+		IdentityCard; PPTSCred; ETokenPurse; ETokenProduct;
+	}
+	
+	X509 = {
+		IdentityCard;
+	}
+	
+	MifareClassic = {}
+	
+	Calypso = {}
+	
+	PETCredential = { 
+		PPTSCred; ETokenPurse; ETokenProduct; 
+	}
+	
+	Idemix = {
+		PPTSCred;
+	}
+	
+	UProve = {}
+	
+	EToken = {
+		ETokenPurse; ETokenProduct;
+	}
+
+	TransactionIdentifier = {		// Credential -> Identifier
+		PPTSCred->T1; ETokenPurse->T2; ETokenProduct->T3; IdentityCard->T4;
+	}
+	
+	CredAttr = {					// Credential x Attribute
+		IdentityCard,Name; IdentityCard,Address; IdentityCard,PassportPicture;
+		IdentityCard,DoB; IdentityCard,SSN;
+		
+		PPTSCred,Name; PPTSCred,Address; PPTSCred,PassportPicture; PPTSCred,DoB; 
+	}
+	
+	CredIssuer = {					// Credential -> Organization
+		IdentityCard->Gov; PPTSCred->TSO; ETokenPurse->TSO; ETokenProduct->PTO;
+	}
+	
+	CredLinkedWith = {				// Credential x Credential
+		ETokenPurse,PPTSCred; ETokenProduct,PPTSCred;
+	}
+	
+	CredPublicAttribute = {			// PETCredential x Attribute
+		ETokenPurse,InfoPurse; ETokenProduct,InfoTP;
+	}
+	
+	CredLinkabilityThreshold = {	// PETCredential -> int
+		ETokenPurse->4;
+		ETokenProduct->4;
+	}
+	
+	InitiallyOwnedCredential = {	// Credential
+		IdentityCard;
+	}
+	
+	Profile = {
+		AccountBank; AccountPPTS;
+	}
+	
+	ProfileAccessType = {
+		Restricted; Public;
+	}
+  	
+  	RestrictedAccess = Restricted
+  	PublicAccess = Public
+	
+	ProfAttr = {					// Profile x Attribute x Stakeholder
+		AccountBank,BankAccountUser,Bank; AccountBank,Name,Gov; AccountBank,Address,Gov;
+		AccountPPTS,Name,Gov; AccountPPTS,Address,Gov; AccountPPTS,PassportPicture,Gov; 
+		AccountPPTS,DoB,Gov;
+	}
+	
+	ProfAccessType = {					// Profile -> ProfileAccessType
+		AccountBank->Restricted;
+		AccountPPTS->Restricted;
+	}
+	
+	ProfOwner = {					// Profile -> Organization
+		AccountBank->Bank;
+		AccountPPTS->TSO;
+	}
+	
+	ProfAccess = {					// Profile x Organization
+		AccountBank,Bank;
+		AccountPPTS,TSO; AccountPPTS,PTO;
+	}
+	
+	InitiallyOwnedProfile = {		// Profile
+		AccountBank;
+	}
+	
+	//----------------------------------------------------------------------------
+  	// Queries
+  	//----------------------------------------------------------------------------
+	
+	ServiceFollowedBy = {			// ServiceIdentifier x ServiceIdentifier
+		TripStartId,TripEndId;
+	}
+	
+	ServiceOneTime = {				// ServiceIdentifier
+		RegisterId;
+	}
+  	
+  	// Query Type 1: linkabilities
+  	IsIdentService = {				// ServiceIdentifier x Organization
+	}
+  
+  	IsPseudoService = {				// ServiceIdentifier x Organization
+    }
+  
+  	IsAnonService = {					// ServiceIdentifier x Organization  
+	}
+  
+  	NoIdentService = {  				// ServiceIdentifier x Organization
+  	}
+  
+  	NoPseudoService = {  				// ServiceIdentifier x Organization
+  	}
+  
+  	NoAnonService = {
+  	}  
+  	
+  	// Query Type 2: attribute disclosure
+  	SearchSet = {						// Attribute
+  	}
+  	
+  	UserProfileMatch = {				// Organization x Identifier
+  	}
+  	
+  	ViolationSet = {					// Attribute x Organization
+  	}
+  	
+  	UserProfileViolation = {			// Organization x Identifier x Attribute
+  	}
+  
+  	// Query Type 3: collaborations between organizations
+  	IsShareDataTo = {					// Organization x Organization
+  	}
+  
+  	NoShareDataTo = {					// Organization x Organization
+  	}
+  
+  	IsShareDataSource = {				// Organization
+  	}
+  
+  	NoShareDataSource = {				// Organization
+  	}	
+  	
+  	// Query Type 3: Trust relationships
+  	
+  	// Query Type 4: Service Time Sequence
+  	UserInvokesServiceAt = {			// Time -> ServiceIdentifier
+  		//0->RegisterId; 1->RechargeId; 2->BuyProductId; 3->TripStartId;
+	}
+  	
+  	
+  	// Query Type 5: Reachabilities
+  	Reachability = { 					// ServiceIdentifier
+  		TripStartId;
+  	}
+  	
+  	ReachabilityNotViaService = {			// ServiceIdentifier
+  	}
+  	
+  	ReachabilityNotCredential = {		// ServiceIdentifier
+  	}
+}
+
+
+term term_mini_exec : voc_privacy {
+    #{s,t : ServiceExecuteAt(s,t)}
+}
+
+term term_mini_collab : voc_privacy {
+  #{ from to : ShareDataTo(from,to)}
+}
+
+include <mx>
+
+procedure main() {
+  
+  print("--------------------------------------------------------------------------------")
+  print("   Verfiy the input model")
+  print("") 
+  print(os.date("   %c"))
+  print("--------------------------------------------------------------------------------")
+  
+  stdoptions.nbmodels = 1
+  
+  // set to false for optimization over a term
+  option_modelexpand = true 
+
+  theoTime = theo_time;  
+  
+  theo = theo_misc
+  theo = merge(theo,theo_credential_properties)
+  theo = merge(theo,theo_sub_profiles)
+  
+  theo = merge(theo,theo_temporal)
+  theo = merge(theo,theo_queries_reachability)
+  
+  theo = merge(theo,theo_profiles_causal)
+  theo3 = theo_profiles_time 
+  
+  
+  //theo = merge(theo,theo_inference_time)
+  //theo = merge(theo,theo_temporal)
+      
+    
+  local x = os.clock()      
+  
+  if(option_modelexpand) then
+    // model expansion inference
+    
+    print("--------------------------------------------------------------------------------")
+  	print("   Precalculated structure")
+  	print("--------------------------------------------------------------------------------")  
+  	
+  	struct = calculatedefinitions(theo_time,struct_privacy)
+    precalc = calculatedefinitions(theo,struct)
+    //print(precalc)
+    
+    print("--------------------------------------------------------------------------------")
+  	print("   Models found")
+  	print("--------------------------------------------------------------------------------")
+  	
+    model = modelexpand(theo,precalc)
+    
+    //print("--------------------------------------------------------------------------------")
+  	//print("   Models found 2")
+  	//print("--------------------------------------------------------------------------------")
+  	 	
+  	//setvocabulary(model[1],voc_privacy_step2)
+    //model = modelexpand(theo2,model[1])
+    //print(model[1])
+    
+    print("--------------------------------------------------------------------------------")
+  	print("   Models found 3")
+  	print("--------------------------------------------------------------------------------")
+    setvocabulary(model[1],voc_privacy_step3)
+    //print(model[1])
+    model = modelexpand(theo3,model[1])
+    print(model[1])
+  else
+    stdoptions.verbosity.solving = 1    // shows some debug
+    print(minimize(theo,StructInputPrivAndTrust,minimize_criterion)[1])
+  end
+  
+  local elapsed_time = os.clock() - x
+  print(string.format("Elapsed time to find models : %.2f sec\n", elapsed_time)) 
+}
